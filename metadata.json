@@ -1,0 +1,7 @@
+{
+  "name": "CarpinERP - Techo Propio Edition",
+  "description": "Comprehensive ERP for carpentry manufacturing and installation, specialized for Peruvian social housing projects (Techo Propio).",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
