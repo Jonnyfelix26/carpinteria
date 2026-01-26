@@ -109,7 +109,7 @@ const App: React.FC = () => {
           <div className="flex items-center gap-4">
             <div className="text-right">
               <p className="text-sm font-bold text-slate-800 leading-none">Admin Operativo</p>
-              <p className="text-[10px] text-amber-600 font-black mt-1 uppercase">CarpinERP v2.0</p>
+              <p className="text-[10px] text-amber-600 font-black mt-1 uppercase">CarpinERP </p>
             </div>
             <div className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center border-2 border-amber-500">
                <User size={20} className="text-amber-500" />
