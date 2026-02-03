@@ -1,121 +1,143 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Sidebar from './components/Sidebar';
 import Dashboard from './views/Dashboard';
 import ProjectsTP from './views/ProjectsTP';
-import CostsView from './views/CostsView';
-import OrdersView from './views/OrdersView';
 import ProductionView from './views/ProductionView';
 import InventoryView from './views/InventoryView';
-import InstallationsView from './views/InstallationsView';
 import UsersView from './views/UsersView';
-import ReportsView from './views/ReportsView';
 import RatesView from './views/RatesView';
 import PayrollView from './views/PayrollView';
-import { Search, Bell, User } from 'lucide-react';
+import OrdersView from './views/OrdersView';
+import InstallationsView from './views/InstallationsView';
+import { Search, User, ShieldCheck, CloudCheck, Loader2 } from 'lucide-react';
 import { Worker, TaskRate, Advance, Material, ProjectTP } from './types';
+import { webApi } from './services/apiService';
 
 const App: React.FC = () => {
   const [activeView, setActiveView] = useState('dashboard');
   const [searchTerm, setSearchTerm] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
 
-  const [workers, setWorkers] = useState<Worker[]>(() => 
-    JSON.parse(localStorage.getItem('workers') || '[]'));
-  const [rates, setRates] = useState<TaskRate[]>(() => 
-    JSON.parse(localStorage.getItem('rates') || '[]'));
-  const [advances, setAdvances] = useState<Advance[]>(() => 
-    JSON.parse(localStorage.getItem('advances') || '[]'));
-  const [orders, setOrders] = useState<any[]>(() => 
-    JSON.parse(localStorage.getItem('orders') || '[]'));
-  const [materials, setMaterials] = useState<Material[]>(() => 
-    JSON.parse(localStorage.getItem('materials') || '[]'));
-  const [projects, setProjects] = useState<ProjectTP[]>(() => 
-    JSON.parse(localStorage.getItem('projects') || '[]'));
+  // Estados de Datos
+  const [workers, setWorkers] = useState<Worker[]>([]);
+  const [rates, setRates] = useState<TaskRate[]>([]);
+  const [advances, setAdvances] = useState<Advance[]>([]);
+  const [materials, setMaterials] = useState<Material[]>([]);
+  const [projects, setProjects] = useState<ProjectTP[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
 
-  useEffect(() => { localStorage.setItem('workers', JSON.stringify(workers)); }, [workers]);
-  useEffect(() => { localStorage.setItem('rates', JSON.stringify(rates)); }, [rates]);
-  useEffect(() => { localStorage.setItem('advances', JSON.stringify(advances)); }, [advances]);
-  useEffect(() => { localStorage.setItem('orders', JSON.stringify(orders)); }, [orders]);
-  useEffect(() => { localStorage.setItem('materials', JSON.stringify(materials)); }, [materials]);
-  useEffect(() => { localStorage.setItem('projects', JSON.stringify(projects)); }, [projects]);
+  // Inicialización asíncrona (Simulando carga web)
+  useEffect(() => {
+    const loadAllData = async () => {
+      setIsLoading(true);
+      const [w, r, a, m, p, o] = await Promise.all([
+        webApi.fetchData('workers'),
+        webApi.fetchData('rates'),
+        webApi.fetchData('advances'),
+        webApi.fetchData('materials'),
+        webApi.fetchData('projects'),
+        webApi.fetchData('orders')
+      ]);
+      setWorkers(w);
+      setRates(r);
+      setAdvances(a);
+      setMaterials(m);
+      setProjects(p);
+      setOrders(o);
+      setIsLoading(false);
+      webApi.logActivity('Admin', 'Acceso al sistema cloud');
+    };
+    loadAllData();
+  }, []);
+
+  // Función de guardado centralizada con feedback visual de red
+  const syncToCloud = useCallback(async (key: string, data: any) => {
+    setIsSyncing(true);
+    await webApi.saveData(key, data);
+    setIsSyncing(false);
+  }, []);
+
+  // Wrappers para actualizar y sincronizar
+  const handleUpdateWorkers = (val: Worker[]) => { setWorkers(val); syncToCloud('workers', val); };
+  const handleUpdateRates = (val: TaskRate[]) => { setRates(val); syncToCloud('rates', val); };
+  const handleUpdateAdvances = (val: Advance[]) => { setAdvances(val); syncToCloud('advances', val); };
+  const handleUpdateMaterials = (val: Material[]) => { setMaterials(val); syncToCloud('materials', val); };
+  const handleUpdateProjects = (val: ProjectTP[]) => { setProjects(val); syncToCloud('projects', val); };
+  const handleUpdateOrders = (val: any[]) => { setOrders(val); syncToCloud('orders', val); };
 
   const renderView = () => {
+    if (isLoading) return (
+      <div className="flex flex-col items-center justify-center h-[60vh] text-slate-400">
+        <Loader2 className="animate-spin mb-4" size={48} />
+        <p className="font-black uppercase tracking-[0.2em] text-xs">Cargando base de datos cloud...</p>
+      </div>
+    );
+
     switch (activeView) {
       case 'dashboard': return <Dashboard advances={advances} />;
-      case 'projects': return (
-        <ProjectsTP 
-          projects={projects} 
-          setProjects={setProjects} 
-          searchTerm={searchTerm} 
-          advances={advances}
-        />
-      );
-      case 'costs': return <CostsView advances={advances} />;
-      case 'orders': return (
-        <OrdersView 
-          searchTerm={searchTerm} 
-          orders={orders} 
-          setOrders={setOrders} 
-          advances={advances}
-        />
-      );
-      case 'production': return (
-        <ProductionView 
-          advances={advances} 
-          setAdvances={setAdvances} 
-          workers={workers} 
-          rates={rates}
-          orders={orders}
-        />
-      );
-      case 'rates': return <RatesView rates={rates} setRates={setRates} />;
+      case 'projects': return <ProjectsTP projects={projects} setProjects={handleUpdateProjects} searchTerm={searchTerm} advances={advances} />;
+      case 'orders': return <OrdersView searchTerm={searchTerm} orders={orders} setOrders={handleUpdateOrders} advances={advances} />;
+      case 'inventory': return <InventoryView searchTerm={searchTerm} materials={materials} setMaterials={handleUpdateMaterials} />;
+      case 'users': return <UsersView workers={workers} setWorkers={handleUpdateWorkers} />;
+      case 'rates': return <RatesView rates={rates} setRates={handleUpdateRates} />;
+      case 'production': return <ProductionView advances={advances} setAdvances={handleUpdateAdvances} workers={workers} rates={rates} orders={orders} />;
       case 'payroll': return <PayrollView advances={advances} workers={workers} />;
-      case 'inventory': return (
-        <InventoryView 
-          searchTerm={searchTerm} 
-          materials={materials} 
-          setMaterials={setMaterials} 
-        />
-      );
       case 'installations': return <InstallationsView advances={advances} />;
-      case 'users': return <UsersView workers={workers} setWorkers={setWorkers} />;
-      case 'reports': return (
-        <ReportsView 
-          advances={advances} 
-          projects={projects} 
-          materials={materials} 
-          orders={orders} 
-        />
-      );
       default: return <Dashboard advances={advances} />;
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
+    <div className="min-h-screen bg-[#f8fafc] flex">
       <Sidebar activeView={activeView} onViewChange={(view) => { setActiveView(view); setSearchTerm(''); }} />
+      
       <main className="flex-1 ml-64 p-8 min-h-screen">
-        <div className="flex justify-between items-center mb-8 bg-white p-4 rounded-xl border border-slate-200 shadow-sm sticky top-8 z-40">
-          <div className="relative w-96">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-            <input 
-              type="text" 
-              placeholder="Buscar..." 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none"
-            />
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="text-right">
-              <p className="text-sm font-bold text-slate-800 leading-none">Admin Operativo</p>
-              <p className="text-[10px] text-amber-600 font-black mt-1 uppercase">CarpinERP </p>
+        {/* Header Superior - Cloud Edition */}
+        <div className="flex justify-between items-center mb-10 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm sticky top-8 z-40">
+          <div className="flex items-center gap-6">
+            <div className="relative w-80">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+              <input 
+                type="text" 
+                placeholder="Buscar recursos..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-12 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-amber-500 outline-none font-bold text-sm"
+              />
             </div>
-            <div className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center border-2 border-amber-500">
-               <User size={20} className="text-amber-500" />
+            
+            <div className="flex items-center gap-2 border-l pl-6 border-slate-100">
+               {isSyncing ? (
+                 <div className="flex items-center gap-2 text-amber-600">
+                    <Loader2 size={16} className="animate-spin" />
+                    <span className="text-[10px] font-black uppercase tracking-widest">Sincronizando...</span>
+                 </div>
+               ) : (
+                 <div className="flex items-center gap-2 text-emerald-600">
+                    <CloudCheck size={16} />
+                    <span className="text-[10px] font-black uppercase tracking-widest">Servidor En Línea</span>
+                 </div>
+               )}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-5">
+            <div className="text-right">
+              <p className="text-xs font-black text-slate-900 leading-none uppercase tracking-tight italic">CarpinERP Cloud</p>
+              <div className="flex items-center gap-1 mt-1 justify-end text-amber-600">
+                 <ShieldCheck size={12} />
+                 <p className="text-[9px] font-black uppercase tracking-widest">Admin Global</p>
+              </div>
+            </div>
+            <div className="w-11 h-11 rounded-xl bg-[#0f172a] flex items-center justify-center text-amber-500 border-2 border-white shadow-lg">
+               <User size={22} />
             </div>
           </div>
         </div>
+
+        {/* Contenido Dinámico */}
         <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
           {renderView()}
         </div>

@@ -1,4 +1,5 @@
 
+
 export enum DoorType {
   SOLID = 'Madera Maciza',
   PLYWOOD = 'Contraplacada'
@@ -37,12 +38,12 @@ export interface TaskRate {
 export interface Advance {
   id: string;
   workerId: string;
-  orderId: string;
   rateId: string;
-  entityName: string; // Nueva propiedad para rastrear la constructora
   quantity: number;
   date: string;
   totalPay: number;
+  orderId?: string;
+  entityName?: string;
 }
 
 export interface Material {
@@ -62,4 +63,14 @@ export interface ProjectTP {
   doorsPerVivienda: number;
   progress: number;
   stage: string;
+}
+
+// Added Expense interface to support financial tracking and reports
+export interface Expense {
+  id: string;
+  description: string;
+  category: 'Madera' | 'Herrajes' | 'Insumos' | 'Logística' | 'Otros';
+  amount: number;
+  entityName: string;
+  date: string;
 }

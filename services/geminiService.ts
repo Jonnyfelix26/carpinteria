@@ -6,8 +6,9 @@ const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export const analyzeProjectBudget = async (projectName: string, budget: number, costs: any) => {
   try {
+    // Using gemini-3-pro-preview for complex reasoning and budget analysis tasks.
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: 'gemini-3-pro-preview',
       contents: `Analiza el presupuesto del proyecto "${projectName}". 
       Presupuesto Total: S/ ${budget}. 
       Costos Actuales: Materiales (S/ ${costs.materials}), Mano de Obra (S/ ${costs.labor}), Instalación (S/ ${costs.install}).
