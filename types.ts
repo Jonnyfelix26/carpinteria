@@ -65,6 +65,19 @@ export interface ProjectTP {
   stage: string;
 }
 
+
+export type OrderPriority = 'Alta' | 'Media' | 'Baja';
+
+export interface Order {
+  id: string;
+  client: string;
+  entity: string;
+  moduleQty: number;
+  priority: OrderPriority;
+  status: ProjectStatus;
+  createdAt: string;
+}
+
 // Added Expense interface to support financial tracking and reports
 export interface Expense {
   id: string;
