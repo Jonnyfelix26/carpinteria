@@ -1,14 +1,14 @@
 
 import React, { useState, useEffect } from 'react';
 import { Hammer, Plus, X, Trash2, Package, Save, Calendar as CalendarIcon, ClipboardList, Loader2 } from 'lucide-react';
-import { Advance, Worker, TaskRate } from '../types';
+import { Advance, Worker, TaskRate, Order } from '../types';
 
 interface ProductionViewProps {
   advances: Advance[];
   setAdvances: (val: Advance[]) => void;
   workers: Worker[];
   rates: TaskRate[];
-  orders: any[];
+  orders: Order[];
 }
 
 const ProductionView: React.FC<ProductionViewProps> = ({ advances, setAdvances, workers, rates, orders }) => {

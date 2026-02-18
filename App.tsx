@@ -11,7 +11,7 @@ import PayrollView from './views/PayrollView';
 import OrdersView from './views/OrdersView';
 import InstallationsView from './views/InstallationsView';
 import { Search, User, ShieldCheck, CloudCheck, Loader2 } from 'lucide-react';
-import { Worker, TaskRate, Advance, Material, ProjectTP } from './types';
+import { Worker, TaskRate, Advance, Material, ProjectTP, Order } from './types';
 import { webApi } from './services/apiService';
 
 const App: React.FC = () => {
@@ -26,7 +26,7 @@ const App: React.FC = () => {
   const [advances, setAdvances] = useState<Advance[]>([]);
   const [materials, setMaterials] = useState<Material[]>([]);
   const [projects, setProjects] = useState<ProjectTP[]>([]);
-  const [orders, setOrders] = useState<any[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
 
   // Inicialización asíncrona (Simulando carga web)
   useEffect(() => {
@@ -59,13 +59,28 @@ const App: React.FC = () => {
     setIsSyncing(false);
   }, []);
 
-  // Wrappers para actualizar y sincronizar
-  const handleUpdateWorkers = (val: Worker[]) => { setWorkers(val); syncToCloud('workers', val); };
-  const handleUpdateRates = (val: TaskRate[]) => { setRates(val); syncToCloud('rates', val); };
-  const handleUpdateAdvances = (val: Advance[]) => { setAdvances(val); syncToCloud('advances', val); };
-  const handleUpdateMaterials = (val: Material[]) => { setMaterials(val); syncToCloud('materials', val); };
-  const handleUpdateProjects = (val: ProjectTP[]) => { setProjects(val); syncToCloud('projects', val); };
-  const handleUpdateOrders = (val: any[]) => { setOrders(val); syncToCloud('orders', val); };
+  // Wrappers para actualizar y sincronizar (soportan SetStateAction)
+  const createSyncedSetter = <T,>(
+    key: string,
+    setState: React.Dispatch<React.SetStateAction<T[]>>
+  ) => {
+    return (action: React.SetStateAction<T[]>) => {
+      setState((prev) => {
+        const next = typeof action === 'function'
+          ? (action as (prevState: T[]) => T[])(prev)
+          : action;
+        syncToCloud(key, next);
+        return next;
+      });
+    };
+  };
+
+  const handleUpdateWorkers = createSyncedSetter<Worker>('workers', setWorkers);
+  const handleUpdateRates = createSyncedSetter<TaskRate>('rates', setRates);
+  const handleUpdateAdvances = createSyncedSetter<Advance>('advances', setAdvances);
+  const handleUpdateMaterials = createSyncedSetter<Material>('materials', setMaterials);
+  const handleUpdateProjects = createSyncedSetter<ProjectTP>('projects', setProjects);
+  const handleUpdateOrders = createSyncedSetter<Order>('orders', setOrders);
 
   const renderView = () => {
     if (isLoading) return (

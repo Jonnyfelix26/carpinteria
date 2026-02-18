@@ -1,22 +1,30 @@
 
 import React, { useState, useMemo } from 'react';
 import { ClipboardList, Plus, Building2, Trash2, X, Package } from 'lucide-react';
-import { ProjectStatus, Advance } from '../types';
+import { ProjectStatus, Advance, Order } from '../types';
 
 interface OrdersViewProps {
   searchTerm: string;
-  orders: any[];
-  setOrders: React.Dispatch<React.SetStateAction<any[]>>;
+  orders: Order[];
+  setOrders: React.Dispatch<React.SetStateAction<Order[]>>;
   advances: Advance[];
 }
 
 const OrdersView: React.FC<OrdersViewProps> = ({ searchTerm, orders, setOrders, advances }) => {
   const [showModal, setShowModal] = useState(false);
-  const [formData, setFormData] = useState({ client: '', entity: '', moduleQty: 1, priority: 'Media', status: ProjectStatus.QUOTED });
+  const [formData, setFormData] = useState<Omit<Order, 'id' | 'createdAt'>>({
+    client: '',
+    entity: '',
+    moduleQty: 1,
+    priority: 'Media',
+    status: ProjectStatus.QUOTED
+  });
 
   const processedOrders = useMemo(() => {
     return orders.map(order => {
-      const orderAdvances = advances.filter(a => a.orderId.toUpperCase() === order.id.toUpperCase());
+      const orderAdvances = advances.filter(
+        (a) => (a.orderId ?? '').toUpperCase() === order.id.toUpperCase()
+      );
       const finishedCount = orderAdvances.reduce((sum, a) => sum + a.quantity, 0);
       const totalRequired = order.moduleQty * 5;
       const progress = totalRequired > 0 ? Math.round((finishedCount / totalRequired) * 100) : 0;
@@ -33,7 +41,7 @@ const OrdersView: React.FC<OrdersViewProps> = ({ searchTerm, orders, setOrders, 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const newOrder = {
+    const newOrder: Order = {
       ...formData,
       id: `PED-${Math.floor(Math.random() * 9000) + 1000}`,
       createdAt: new Date().toLocaleDateString()
@@ -69,7 +77,7 @@ const OrdersView: React.FC<OrdersViewProps> = ({ searchTerm, orders, setOrders, 
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 text-sm">
-            {filteredOrders.map((order: any) => (
+            {filteredOrders.map((order) => (
               <tr key={order.id} className="hover:bg-slate-50 transition-all group">
                 <td className="px-8 py-6">
                   <div className="font-mono font-black text-amber-700 text-lg leading-none mb-1">{order.id}</div>
